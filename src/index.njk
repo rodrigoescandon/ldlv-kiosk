@@ -6,13 +6,13 @@ layout: layouts/base.njk
 <div class="flex items-center justify-center w-full min-h-screen">
   <div
     x-data="player()"
-    x-init="getRandomStory($refs)"
-    class="text-3xl mx-4"
+    x-init="initPlayer($refs)"
+    class="text-3xl mx-8 font-bold"
   >
     <div x-text="text"></div>
     <audio
       x-ref="player"
-      x-on:ended="getRandomStory($refs)"
+      x-on:ended="playNextStory($refs)"
     >
             Your browser does not support the
             <code>audio</code> element.
@@ -23,10 +23,11 @@ layout: layouts/base.njk
 <script>
   function player() {
     return {
+      count: 0,
+      persons: {},
       text: '',
       url: '',
-      async getRandomStory(refs) {
-        const player = refs.player;
+      async fetchData() {
         // Fetch data
         const data = await fetch("https://vkbgitwu.api.sanity.io/v2021-10-04/data/query/production?query=*[_type=='person']{age,city,state,country,stories[]->{recording{asset->{url}}}} ", {
           method: "GET",
@@ -35,13 +36,21 @@ layout: layouts/base.njk
           }
         });
         const dataJson = await data.json();
-        const persons = dataJson.result;
+        this.persons = dataJson.result;
+        console.log(this.persons)
+      },
+      async playNextStory(refs) {
+        // Get player ref
+        const player = refs.player;
         // Get random person
+        const persons = this.persons;
         const randomPerson = persons[Math.floor(Math.random() * persons.length)];
         // Assign random story
         randomPerson['randomStory'] = randomPerson['stories'][Math.floor(Math.random() * randomPerson['stories'].length)];
         // Form return object
-        const text = `Estás escuhando una historia de una persona de ${randomPerson['city']}, ${randomPerson['state']} de ${randomPerson['age']} años de edad.`;
+        const text = `Estás escuhando una historia de una persona de ${randomPerson['city']}, ${randomPerson['state']} que ${randomPerson['owner']
+          ? 'sí'
+          : 'no'} es dueña de su vivienda.`;
         const url = randomPerson['randomStory']['recording']['asset']['url'];
         const information = {
           text,
@@ -51,8 +60,14 @@ layout: layouts/base.njk
         this.text = text;
         player.src = url;
         player.play();
-
-        return information;
+      },
+      async initPlayer(refs) {
+        const intervalMinutes = 2;
+        await this.fetchData();
+        this.playNextStory(refs);
+        setInterval(() => {
+          this.fetchData()
+        }, intervalMinutes * 60 * 1000);
       }
     }
   }
