@@ -3,11 +3,11 @@ title: Línea de la vivienda
 description: Línea de la vivienda
 layout: layouts/base.njk
 ---
-<div class="flex items-center justify-center w-full min-h-screen">
+<div class="">
   <div
     x-data="player()"
     x-init="initPlayer($refs)"
-    class="text-3xl mx-8 font-bold"
+    class="mt-7 text-3xl mx-8 font-bold"
   >
     <div x-text="text"></div>
     <audio
@@ -36,7 +36,11 @@ layout: layouts/base.njk
           }
         });
         const dataJson = await data.json();
-        this.persons = dataJson.result;
+        this.persons = dataJson
+          .result
+          .filter(person => {
+            return person.stories
+          });
         console.log(this.persons)
       },
       async playNextStory(refs) {
@@ -48,7 +52,7 @@ layout: layouts/base.njk
         // Assign random story
         randomPerson['randomStory'] = randomPerson['stories'][Math.floor(Math.random() * randomPerson['stories'].length)];
         // Form return object
-        const text = `Estás escuhando una historia de una persona de ${randomPerson['city']}, ${randomPerson['state']} que ${randomPerson['owner']
+        const text = `Estás escuchando una historia de una persona de ${randomPerson['city']}, ${randomPerson['state']} que ${randomPerson['owner']
           ? 'sí'
           : 'no'} es dueña de su vivienda.`;
         const url = randomPerson['randomStory']['recording']['asset']['url'];
